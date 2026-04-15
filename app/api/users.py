@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.db.database import get_pool
 from app.db.models import (
-    UserResponse, UpdateUserRequest, UserInDB,
-    AddressCreate, AddressResponse
+    UserResponse,
+    UpdateUserRequest,
+    UserInDB,
+    AddressCreate,
+    AddressResponse,
 )
 from app.core.deps import get_current_user
 
@@ -43,7 +46,9 @@ async def update_me(
         )
 
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return UserResponse(**dict(row))
 
@@ -61,12 +66,15 @@ async def get_user(
         )
 
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return UserResponse(**dict(row))
 
 
 # ── Address Book ──────────────────────────────────────────────────────────
+
 
 @router.get("/me/addresses", response_model=list[AddressResponse])
 async def list_my_addresses(current_user: UserInDB = Depends(get_current_user)):
@@ -79,7 +87,9 @@ async def list_my_addresses(current_user: UserInDB = Depends(get_current_user)):
     return [AddressResponse(**dict(r)) for r in rows]
 
 
-@router.post("/me/addresses", response_model=AddressResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/me/addresses", response_model=AddressResponse, status_code=status.HTTP_201_CREATED
+)
 async def add_address(
     body: AddressCreate,
     current_user: UserInDB = Depends(get_current_user),

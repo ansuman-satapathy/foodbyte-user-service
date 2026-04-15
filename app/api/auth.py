@@ -7,7 +7,9 @@ from app.core.security import hash_password, verify_password, create_access_toke
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(body: RegisterRequest):
     pool = get_pool()
     async with pool.acquire() as conn:

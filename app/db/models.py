@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, EmailStr, Field, field_validator
-
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class UserRole(str, Enum):
@@ -12,6 +11,7 @@ class UserRole(str, Enum):
 
 
 # ── Request bodies ────────────────────────────────────────────────────────────
+
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -61,6 +61,7 @@ class AddressResponse(BaseModel):
 
 # ── Response bodies ───────────────────────────────────────────────────────────
 
+
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
@@ -79,6 +80,7 @@ class TokenResponse(BaseModel):
 
 
 # ── Internal representation ───────────────────────────────────────────────────
+
 
 class UserInDB(BaseModel):
     id: uuid.UUID
