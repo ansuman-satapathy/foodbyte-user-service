@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError
+import jwt
 from app.core.security import decode_token
 from app.db.database import get_pool
 from app.db.models import UserInDB
@@ -15,9 +15,9 @@ async def get_current_user(
 ) -> UserInDB:
     """FastAPI dependency. Add to any route that requires authentication:
 
-        @router.get("/me")
-        async def me(user: UserInDB = Depends(get_current_user)):
-            ...
+    @router.get("/me")
+    async def me(user: UserInDB = Depends(get_current_user)):
+        ...
 
     Validates the JWT, then fetches the user from the database to confirm
     they still exist and are active. The DB lookup is intentional — a deleted
@@ -33,7 +33,7 @@ async def get_current_user(
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError:
+    except jwt.PyJWTError:
         raise credentials_exception
 
     pool = get_pool()
