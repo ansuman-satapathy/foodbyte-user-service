@@ -9,7 +9,7 @@ _pool: asyncpg.Pool | None = None
 
 async def init_db() -> None:
     global _pool
-    
+
     for attempt in range(5):
         try:
             _pool = await asyncpg.create_pool(

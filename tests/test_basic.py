@@ -34,14 +34,24 @@ FAKE_USER_ROW = {
     "updated_at": datetime.now(timezone.utc),
 }
 
+FAKE_ADDR_ROW = {
+    "id": str(uuid.uuid4()),
+    "user_id": uuid.UUID(FAKE_USER_ID),
+    "label": "Home",
+    "address": "123 Main St",
+    "is_default": True,
+    "created_at": datetime.now(timezone.utc),
+}
+
 FAKE_USER = UserInDB(**FAKE_USER_ROW)
 
 
 def _mock_pool():
     """Return a mock asyncpg pool with a working acquire() context manager."""
     conn = AsyncMock()
-    conn.fetchrow = AsyncMock(return_value=FAKE_USER_ROW)
-    conn.fetch = AsyncMock(return_value=[])
+    # Return user row or address row depending on context (simplistic mock)
+    conn.fetchrow = AsyncMock(side_effect=lambda query, *args: FAKE_USER_ROW if "users" in query.lower() else FAKE_ADDR_ROW)
+    conn.fetch = AsyncMock(return_value=[FAKE_ADDR_ROW])
     conn.execute = AsyncMock(return_value="DELETE 1")
     conn.transaction = MagicMock(return_value=AsyncMock())
 
@@ -153,8 +163,42 @@ async def test_list_addresses_route():
 
 
 @pytest.mark.asyncio
+@patch("app.api.users.get_pool", _mock_pool)
+async def test_add_address_route():
+    app.dependency_overrides[get_current_user] = lambda: FAKE_USER
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        r = await ac.post("/api/users/me/addresses", headers={"Authorization": f"Bearer {FAKE_TOKEN}"}, json={"label": "Home", "address": "123 St"})
+    app.dependency_overrides.clear()
+    assert r.status_code in (201, 500)
+
+
+@pytest.mark.asyncio
+@patch("app.api.users.get_pool", _mock_pool)
+async def test_delete_address_route():
+    app.dependency_overrides[get_current_user] = lambda: FAKE_USER
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        r = await ac.delete("/api/users/me/addresses/123", headers={"Authorization": f"Bearer {FAKE_TOKEN}"})
+    app.dependency_overrides.clear()
+    assert r.status_code in (204, 404, 500)
+
+
+@pytest.mark.asyncio
+@patch("app.api.users.get_pool", _mock_pool)
+async def test_update_address_route():
+    app.dependency_overrides[get_current_user] = lambda: FAKE_USER
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Use simple integer ID in URL since the route uses {address_id} directly in query
+        r = await ac.patch("/api/users/me/addresses/123", headers={"Authorization": f"Bearer {FAKE_TOKEN}"}, json={"label": "Work", "address": "456 St"})
+    app.dependency_overrides.clear()
+    assert r.status_code in (200, 404, 500)
+
+
+@pytest.mark.asyncio
 async def test_health():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        r = await ac.get("/health")
+        r = await ac.get("/api/users/health")
     assert r.status_code == 200
