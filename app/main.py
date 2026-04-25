@@ -7,7 +7,6 @@ from app.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     await init_db()
     yield
     await close_db()
@@ -21,10 +20,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.include_router(auth.router)
-app.include_router(users.router)
-
-
-@app.get("/health")
+@app.get("/api/users/health")
 async def health():
     return {"status": "ok", "service": settings.app_name}
+
+app.include_router(auth.router)
+app.include_router(users.router)

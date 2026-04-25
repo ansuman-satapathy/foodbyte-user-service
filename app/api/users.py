@@ -118,6 +118,34 @@ async def add_address(
     return AddressResponse(**dict(row))
 
 
+@router.patch("/me/addresses/{address_id}", response_model=AddressResponse)
+async def update_address(
+    address_id: str,
+    body: AddressCreate,
+    current_user: UserInDB = Depends(get_current_user),
+):
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            UPDATE user_addresses
+            SET label = $1, address = $2, is_default = $3
+            WHERE id = $4 AND user_id = $5
+            RETURNING *
+            """,
+            body.label,
+            body.address,
+            body.is_default,
+            address_id,
+            current_user.id,
+        )
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Address not found")
+
+    return AddressResponse(**dict(row))
+
+
 @router.delete("/me/addresses/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_address(
     address_id: str,

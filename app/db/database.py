@@ -1,18 +1,32 @@
+import asyncio
+import logging
 import asyncpg
 from app.config import settings
 
+logger = logging.getLogger(__name__)
 _pool: asyncpg.Pool | None = None
 
 
 async def init_db() -> None:
     global _pool
-    _pool = await asyncpg.create_pool(
-        dsn=settings.database_url,
-        min_size=2,
-        max_size=10,
-        command_timeout=30,
-    )
-    await _run_migrations()
+    
+    for attempt in range(5):
+        try:
+            _pool = await asyncpg.create_pool(
+                dsn=settings.database_url,
+                min_size=2,
+                max_size=10,
+                command_timeout=30,
+            )
+            await _run_migrations()
+            logger.info("Database initialized successfully")
+            return
+        except Exception as e:
+            logger.warning(f"Database connection attempt {attempt + 1} failed: {e}")
+            if attempt == 4:
+                logger.error("Final database connection attempt failed")
+                raise
+            await asyncio.sleep(2)
 
 
 async def close_db() -> None:
